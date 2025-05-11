@@ -1,7 +1,9 @@
-// inspector.js – full, improved version
+// inspector.js – with edge-aware tooltip
 (() => {
   const TRIGGER_KEY = 'Alt';
-  const MAX_HIERARCHY_LEVELS = 5; // Current component + n parents
+  const MAX_HIERARCHY_LEVELS = 4; // Current component + n parents
+  const OFFSET = 12; // Distance from cursor
+  const MARGIN = 8; // Min distance from viewport edge
 
   let inspecting = false;
   let tooltipDiv = null;
@@ -24,7 +26,6 @@
       fontFamily: 'sans-serif',
       padding: '2px 6px',
       borderRadius: '3px',
-      transform: 'translate(-50%, -150%)',
       whiteSpace: 'nowrap',
       transition: 'opacity 75ms linear',
       opacity: '0',
@@ -32,12 +33,38 @@
     document.body.appendChild(tooltipDiv);
   }
 
-  function showTooltip(text, x, y) {
+  function showTooltip(text, mouseX, mouseY) {
     ensureTooltip();
     tooltipDiv.textContent = text;
+    tooltipDiv.style.opacity = '1';
+
+    /* 1. render off-screen to measure */
+    tooltipDiv.style.left = '-9999px';
+    tooltipDiv.style.top = '-9999px';
+    const { width, height } = tooltipDiv.getBoundingClientRect();
+
+    /* 2. initial position to bottom-right of cursor */
+    let x = mouseX + OFFSET;
+    let y = mouseY + OFFSET;
+
+    /* 3. flip horizontally if overflowing right edge */
+    if (x + width + MARGIN > window.innerWidth) {
+      x = mouseX - width - OFFSET;
+      if (x < MARGIN) x = window.innerWidth - width - MARGIN;
+    }
+
+    /* 4. flip vertically if overflowing bottom edge */
+    if (y + height + MARGIN > window.innerHeight) {
+      y = mouseY - height - OFFSET;
+      if (y < MARGIN) y = window.innerHeight - height - MARGIN;
+    }
+
+    /* 5. clamp to top/left margins */
+    if (x < MARGIN) x = MARGIN;
+    if (y < MARGIN) y = MARGIN;
+
     tooltipDiv.style.left = `${x}px`;
     tooltipDiv.style.top = `${y}px`;
-    tooltipDiv.style.opacity = '1';
   }
 
   function hideTooltip() {
@@ -55,7 +82,7 @@
     );
   }
 
-  // Walk up from a text or comment node until we hit an element
+  // Walk up from text/comment to an element
   function ensureElement(node) {
     let n = node;
     while (n && n.nodeType !== 1) n = n.parentNode;
@@ -75,7 +102,7 @@
   }
 
   /* ────────────────────────────────────────────────────────────────── *
-   *  Fiber-type utilities (mirrors DevTools logic)                    *
+   *  Fiber & name utilities                                           *
    * ────────────────────────────────────────────────────────────────── */
   const USER_COMPONENT_TAGS = new Set([
     0, // FunctionComponent
@@ -89,7 +116,6 @@
     return USER_COMPONENT_TAGS.has(fiber.tag);
   }
 
-  // Unwrap Memo / ForwardRef once for a clean label
   function getDisplayType(type) {
     if (!type) return null;
     if (type.render) return type.render; // ForwardRef
@@ -101,7 +127,7 @@
     if (!fiber) return null;
     const inner = getDisplayType(fiber.type);
     if (!inner) return null;
-    if (typeof inner === 'string') return inner; // host tag like 'div'
+    if (typeof inner === 'string') return inner; // host tag
     return inner.displayName || inner.name || 'Anonymous';
   }
 
@@ -143,7 +169,7 @@
       const fiber = findFiber(ensureElement(evt.target));
       const hierarchyName = getComponentHierarchyDisplay(fiber);
       if (hierarchyName) {
-        showTooltip(hierarchyName, evt.clientX + 12, evt.clientY + 12);
+        showTooltip(hierarchyName, evt.clientX, evt.clientY);
       } else {
         hideTooltip();
       }
