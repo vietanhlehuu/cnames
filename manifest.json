@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "React Components Inspector",
-  "version": "0.1",
+  "version": "1.0",
   "description": "Hold Alt/Option and hover to see React component names (Dev Mode).",
   "icons": {
     "16": "images/favicon-16x16.png",
