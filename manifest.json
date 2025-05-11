@@ -1,8 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "React On-Page Inspector",
+  "name": "React Components Inspector",
   "version": "0.1",
   "description": "Hold Alt/Option and hover to see React component names (Dev Mode).",
+  "icons": {
+    "16": "images/favicon-16x16.png",
+    "32": "images/favicon-32x32.png",
+    "48": "images/android-chrome-192x192.png",
+    "128": "images/android-chrome-192x192.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "images/favicon-16x16.png",
+      "32": "images/favicon-32x32.png"
+    },
+    "default_title": "React Components Inspector"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
