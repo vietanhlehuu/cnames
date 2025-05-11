@@ -1,13 +1,15 @@
+// inspector.js – full, improved version
 (() => {
   const TRIGGER_KEY = 'Alt';
+  const MAX_HIERARCHY_LEVELS = 5; // Current component + n parents
+
   let inspecting = false;
   let tooltipDiv = null;
   let raf = null;
-  const MAX_HIERARCHY_LEVELS = 4; // Current component + 4 parents
 
-  /* ------------------------------------------------------------------ */
-  /*  Tooltip helpers                                                   */
-  /* ------------------------------------------------------------------ */
+  /* ────────────────────────────────────────────────────────────────── *
+   *  Tooltip helpers                                                  *
+   * ────────────────────────────────────────────────────────────────── */
   function ensureTooltip() {
     if (tooltipDiv) return;
     tooltipDiv = document.createElement('div');
@@ -29,6 +31,7 @@
     });
     document.body.appendChild(tooltipDiv);
   }
+
   function showTooltip(text, x, y) {
     ensureTooltip();
     tooltipDiv.textContent = text;
@@ -36,19 +39,27 @@
     tooltipDiv.style.top = `${y}px`;
     tooltipDiv.style.opacity = '1';
   }
+
   function hideTooltip() {
     if (tooltipDiv) tooltipDiv.style.opacity = '0';
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  React helpers                                                     */
-  /* ------------------------------------------------------------------ */
+  /* ────────────────────────────────────────────────────────────────── *
+   *  React hook helpers                                               *
+   * ────────────────────────────────────────────────────────────────── */
   function hasHook() {
     return (
       !!window.__REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers &&
       window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.size > 0
     );
+  }
+
+  // Walk up from a text or comment node until we hit an element
+  function ensureElement(node) {
+    let n = node;
+    while (n && n.nodeType !== 1) n = n.parentNode;
+    return n;
   }
 
   function findFiber(node) {
@@ -63,69 +74,61 @@
     return null;
   }
 
-  function displayNameForFiber(fiber) {
-    if (!fiber) return null;
+  /* ────────────────────────────────────────────────────────────────── *
+   *  Fiber-type utilities (mirrors DevTools logic)                    *
+   * ────────────────────────────────────────────────────────────────── */
+  const USER_COMPONENT_TAGS = new Set([
+    0, // FunctionComponent
+    1, // ClassComponent
+    11, // ForwardRef
+    14, // MemoComponent
+    22, // SimpleMemoComponent (React 18+)
+  ]);
 
-    // Climb out of host fibers (div, span, etc.) to user code
-    let f = fiber;
-    while (f && typeof f.type === 'string') f = f.return || null;
-    if (!f) f = fiber;
-
-    const type = f.type;
-    if (!type) return null;
-
-    // handle ForwardRef / Memo wrappers
-    const resolved = type.render || type.type || type;
-    return (
-      resolved.displayName ||
-      resolved.name ||
-      (typeof resolved === 'string' ? resolved : 'Anonymous')
-    );
+  function isUserland(fiber) {
+    return USER_COMPONENT_TAGS.has(fiber.tag);
   }
 
-  function getComponentHierarchyDisplay(initialFiber) {
+  // Unwrap Memo / ForwardRef once for a clean label
+  function getDisplayType(type) {
+    if (!type) return null;
+    if (type.render) return type.render; // ForwardRef
+    if (type.type) return type.type; // Memo
+    return type;
+  }
+
+  function displayNameForFiber(fiber) {
+    if (!fiber) return null;
+    const inner = getDisplayType(fiber.type);
+    if (!inner) return null;
+    if (typeof inner === 'string') return inner; // host tag like 'div'
+    return inner.displayName || inner.name || 'Anonymous';
+  }
+
+  function getParentComponentFiber(fiber) {
+    let p = fiber?.return || null;
+    while (p && !isUserland(p)) p = p.return;
+    return p;
+  }
+
+  function getComponentHierarchyDisplay(startFiber) {
     const names = [];
-    let currentFiber = initialFiber;
-    let meaningfulNamesCount = 0; // Counter for non-anonymous component names
+    let current =
+      startFiber && isUserland(startFiber)
+        ? startFiber
+        : getParentComponentFiber(startFiber);
 
-    // Loop as long as there's a fiber and we haven't found enough meaningful names
-    while (currentFiber && meaningfulNamesCount < MAX_HIERARCHY_LEVELS) {
-      const name = displayNameForFiber(currentFiber);
-
-      if (!name) {
-        // If displayNameForFiber returns null (e.g., fiber.type is null or some other issue), stop.
-        break;
-      }
-
-      if (name !== 'Anonymous') {
-        names.unshift(name); // Add to the beginning for Parent > Child order
-        meaningfulNamesCount++; // Increment count only for non-anonymous names
-      }
-      // If name is 'Anonymous', we skip adding it and don't increment meaningfulNamesCount.
-      // The loop will continue to the parent.
-
-      // Determine the actual fiber whose name was resolved by displayNameForFiber
-      // to correctly move to its parent for the next iteration.
-      let resolvedFiber = currentFiber;
-      const originalFiberForThisIteration = currentFiber; // Save for the case where climbing results in null
-
-      while (resolvedFiber && typeof resolvedFiber.type === 'string') {
-        resolvedFiber = resolvedFiber.return || null;
-      }
-      if (!resolvedFiber) {
-        // If climbing resulted in null, displayNameForFiber used the original fiber
-        resolvedFiber = originalFiberForThisIteration;
-      }
-
-      // Move to the parent of the fiber whose name was just processed (or skipped if Anonymous)
-      currentFiber = resolvedFiber ? resolvedFiber.return : null;
+    while (current && names.length < MAX_HIERARCHY_LEVELS) {
+      const name = displayNameForFiber(current);
+      if (name && name !== 'Anonymous') names.unshift(name);
+      current = getParentComponentFiber(current);
     }
     return names.join(' > ');
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Event handlers                                                    */
-  /* ------------------------------------------------------------------ */
+  /* ────────────────────────────────────────────────────────────────── *
+   *  Event handlers                                                   *
+   * ────────────────────────────────────────────────────────────────── */
   function onMove(evt) {
     if (!inspecting) return;
     evt.preventDefault();
@@ -137,7 +140,7 @@
         hideTooltip();
         return;
       }
-      const fiber = findFiber(evt.target);
+      const fiber = findFiber(ensureElement(evt.target));
       const hierarchyName = getComponentHierarchyDisplay(fiber);
       if (hierarchyName) {
         showTooltip(hierarchyName, evt.clientX + 12, evt.clientY + 12);
@@ -154,9 +157,9 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Start / stop inspect mode                                         */
-  /* ------------------------------------------------------------------ */
+  /* ────────────────────────────────────────────────────────────────── *
+   *  Start / stop inspect mode                                        *
+   * ────────────────────────────────────────────────────────────────── */
   function startInspect() {
     if (inspecting) return;
     inspecting = true;
@@ -183,15 +186,13 @@
     hideTooltip();
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Global key listeners                                              */
-  /* ------------------------------------------------------------------ */
+  /* ────────────────────────────────────────────────────────────────── *
+   *  Global key listeners                                             *
+   * ────────────────────────────────────────────────────────────────── */
   window.addEventListener('keydown', (e) => {
     if (e.key === TRIGGER_KEY) startInspect();
   });
   window.addEventListener('keyup', (e) => {
-    if (e.key === TRIGGER_KEY && inspecting) {
-      stopInspect();
-    }
+    if (e.key === TRIGGER_KEY && inspecting) stopInspect();
   });
 })();
