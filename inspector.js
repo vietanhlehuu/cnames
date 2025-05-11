@@ -133,7 +133,7 @@
 
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      if (!hasHook()) {
+      if (!hasHook() || !inspecting) {
         hideTooltip();
         return;
       }
@@ -171,6 +171,11 @@
     if (!inspecting) return;
     inspecting = false;
 
+    if (raf) {
+      cancelAnimationFrame(raf);
+      raf = null;
+    }
+
     document.removeEventListener('mousemove', onMove, true);
     document.removeEventListener('mouseover', onMove, true);
     document.removeEventListener('mousedown', stopEvent, true);
@@ -185,6 +190,8 @@
     if (e.key === TRIGGER_KEY) startInspect();
   });
   window.addEventListener('keyup', (e) => {
-    if (inspecting) stopInspect();
+    if (e.key === TRIGGER_KEY && inspecting) {
+      stopInspect();
+    }
   });
 })();
