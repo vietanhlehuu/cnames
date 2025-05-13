@@ -146,7 +146,7 @@
 
     while (current && names.length < MAX_HIERARCHY_LEVELS) {
       const name = displayNameForFiber(current);
-      if (name && name !== 'Anonymous') names.unshift(name);
+      if (name && name !== 'Anonymous' && name.length > 2) names.unshift(name);
       current = getParentComponentFiber(current);
     }
     return names.join(' > ');
