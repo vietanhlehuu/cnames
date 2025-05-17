@@ -136,7 +136,7 @@
           if (fiber) return fiber;
         }
       } catch (err) {
-        console.log('React Component Names--Error finding fiber:', err);
+        console.error('React Component Names--Error finding fiber:', err);
       }
     }
 
@@ -210,12 +210,7 @@
       }
       const fiber = findFiber(ensureElement(evt.target));
       const hierarchyName = getComponentHierarchyDisplay(fiber);
-      console.log(
-        '====fiber====',
-        ensureElement(evt.target),
-        fiber,
-        hierarchyName
-      );
+
       if (hierarchyName) {
         showTooltip(hierarchyName, evt.clientX, evt.clientY);
       } else {
@@ -264,7 +259,6 @@
    *  Global key listeners                                             *
    * ────────────────────────────────────────────────────────────────── */
   window.addEventListener('keydown', (e) => {
-    console.log('====runnn====');
     if (e.key === TRIGGER_KEY) startInspect();
   });
   window.addEventListener('keyup', (e) => {
