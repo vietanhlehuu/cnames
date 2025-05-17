@@ -6,7 +6,11 @@ This Chrome extension allows you to inspect React component names on any webpage
 
 Watch how easy it is to inspect React components:
 
-![Demo](assets/videos/cnames-demo.mp4)
+
+
+https://github.com/user-attachments/assets/5b6ae47c-826c-498f-90b4-beb2c9cc340d
+
+
 
 ## Installation
 
