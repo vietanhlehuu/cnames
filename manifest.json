@@ -23,7 +23,7 @@
       "run_at": "document_start"
     }
   ],
-  "host_permissions": ["<all_urls>"],
+  "permissions": ["activeTab"],
   "web_accessible_resources": [
     {
       "resources": ["hook.js", "inspector.js"],

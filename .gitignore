@@ -50,3 +50,4 @@ SELF_HOST_BUILD_NUMBER
 .npmrc
 # Sentry Config File
 .env.sentry-build-plugin
+/dist

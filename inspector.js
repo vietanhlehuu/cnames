@@ -92,12 +92,54 @@
   function findFiber(node) {
     const hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
     if (!hook) return null;
+
+    // Try to find fiber directly from node's internal properties first
+    if (node) {
+      // Check for _reactRootContainer (used by some React versions)
+      if (node._reactRootContainer?._internalRoot?.current) {
+        return node._reactRootContainer._internalRoot.current;
+      }
+
+      // Check for __reactFiber random key (used by Remix and newer React)
+      const fiberKey = Object.keys(node).find((key) =>
+        key.startsWith('__reactFiber')
+      );
+      if (fiberKey && node[fiberKey]) {
+        return node[fiberKey];
+      }
+
+      // Check for __reactInternalInstance (older versions)
+      const internalKey = Object.keys(node).find((key) =>
+        key.startsWith('__reactInternalInstance')
+      );
+      if (internalKey && node[internalKey]) {
+        return node[internalKey];
+      }
+    }
+
+    // Fall back to renderer methods
     for (const renderer of hook.renderers.values()) {
       try {
-        const fiber = renderer.findFiberByHostInstance(node);
-        if (fiber) return fiber;
-      } catch (_) {}
+        // Try different methods to get fiber
+        if (renderer.current?.findFiberByHostInstance) {
+          const fiber = renderer.current.findFiberByHostInstance(node);
+          if (fiber) return fiber;
+        }
+
+        if (renderer.findFiberByHostInstance) {
+          const fiber = renderer.findFiberByHostInstance(node);
+          if (fiber) return fiber;
+        }
+
+        if (renderer.getFiberFromNode) {
+          const fiber = renderer.getFiberFromNode(node);
+          if (fiber) return fiber;
+        }
+      } catch (err) {
+        console.log('React Component Names--Error finding fiber:', err);
+      }
     }
+
     return null;
   }
 
@@ -168,6 +210,12 @@
       }
       const fiber = findFiber(ensureElement(evt.target));
       const hierarchyName = getComponentHierarchyDisplay(fiber);
+      console.log(
+        '====fiber====',
+        ensureElement(evt.target),
+        fiber,
+        hierarchyName
+      );
       if (hierarchyName) {
         showTooltip(hierarchyName, evt.clientX, evt.clientY);
       } else {
@@ -216,6 +264,7 @@
    *  Global key listeners                                             *
    * ────────────────────────────────────────────────────────────────── */
   window.addEventListener('keydown', (e) => {
+    console.log('====runnn====');
     if (e.key === TRIGGER_KEY) startInspect();
   });
   window.addEventListener('keyup', (e) => {
