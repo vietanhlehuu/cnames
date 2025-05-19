@@ -4,6 +4,8 @@
   const MAX_HIERARCHY_LEVELS = 4; // Current component + n parents
   const OFFSET = 12; // Distance from cursor
   const MARGIN = 8; // Min distance from viewport edge
+  const NO_DEVTOOLS_MESSAGE =
+    'React DevTools not detected. Please install the React Developer Tools extension.';
 
   let inspecting = false;
   let tooltipDiv = null;
@@ -204,7 +206,11 @@
 
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
-      if (!hasHook() || !inspecting) {
+      if (!hasHook()) {
+        showTooltip(NO_DEVTOOLS_MESSAGE, evt.clientX, evt.clientY);
+        return;
+      }
+      if (!inspecting) {
         hideTooltip();
         return;
       }
