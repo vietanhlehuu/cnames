@@ -26,7 +26,7 @@
   "permissions": ["activeTab"],
   "web_accessible_resources": [
     {
-      "resources": ["hook.js", "inspector.js"],
+      "resources": ["inspector.js"],
       "matches": ["<all_urls>"]
     }
   ]

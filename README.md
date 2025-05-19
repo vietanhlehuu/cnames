@@ -6,11 +6,13 @@ This Chrome extension allows you to inspect React component names on any webpage
 
 Watch how easy it is to inspect React components:
 
-
-
 https://github.com/user-attachments/assets/5b6ae47c-826c-498f-90b4-beb2c9cc340d
 
+## Prerequisites
 
+Before installing this extension, please ensure you have the official React Developer Tools installed:
+
+- Install [React Developer Tools](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi) from the Chrome Web Store
 
 ## Installation
 
