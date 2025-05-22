@@ -23,7 +23,6 @@
       "run_at": "document_start"
     }
   ],
-  "permissions": ["activeTab"],
   "web_accessible_resources": [
     {
       "resources": ["inspector.js"],
