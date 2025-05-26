@@ -1,7 +1,7 @@
 // inspector.js – with edge-aware tooltip
 (() => {
   const TRIGGER_KEY = 'Alt';
-  const MAX_HIERARCHY_LEVELS = 4; // Current component + n parents
+  const MAX_HIERARCHY_LEVELS = 5; // Current component + n parents
   const OFFSET = 12; // Distance from cursor
   const MARGIN = 8; // Min distance from viewport edge
   const NO_DEVTOOLS_MESSAGE =
@@ -175,25 +175,44 @@
     return inner.displayName || inner.name || 'Anonymous';
   }
 
+  function getOwnerFiber(fiber) {
+    if (!fiber) return null;
+
+    // Try owner properties first (these represent who actually rendered this component)
+    if (fiber._debugOwner) return fiber._debugOwner;
+    if (fiber._owner) return fiber._owner;
+
+    // Fallback: traverse up the return chain but only return userland components
+    // This approximates owner relationship by skipping host elements
+    let p = fiber.return;
+    while (p) {
+      if (isUserland(p)) return p;
+      p = p.return;
+    }
+    return null;
+  }
+
   function getParentComponentFiber(fiber) {
-    let p = fiber?.return || null;
-    while (p && !isUserland(p)) p = p.return;
-    return p;
+    return getOwnerFiber(fiber);
   }
 
   function getComponentHierarchyDisplay(startFiber) {
     const names = [];
-    let current =
-      startFiber && isUserland(startFiber)
-        ? startFiber
-        : getParentComponentFiber(startFiber);
+    let current = startFiber;
 
+    // Traverse the owner chain and collect all userland components
     while (current && names.length < MAX_HIERARCHY_LEVELS) {
-      const name = displayNameForFiber(current);
-      if (name && name !== 'Anonymous' && name.length > 2) names.unshift(name);
+      if (isUserland(current)) {
+        const name = displayNameForFiber(current);
+        if (name && name !== 'Anonymous' && name.length > 2) {
+          names.push(name);
+        }
+      }
       current = getParentComponentFiber(current);
     }
-    return names.join(' > ');
+
+    // Reverse to show hierarchy from parent to child
+    return names.reverse().join(' > ');
   }
 
   /* ────────────────────────────────────────────────────────────────── *
