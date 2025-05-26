@@ -182,8 +182,13 @@
     if (fiber._debugOwner) return fiber._debugOwner;
     if (fiber._owner) return fiber._owner;
 
-    // Fallback: traverse up the return chain but only return userland components
-    // This approximates owner relationship by skipping host elements
+    return null;
+  }
+
+  function getParentFiber(fiber) {
+    if (!fiber) return null;
+
+    // Traverse up the return chain but only return userland components
     let p = fiber.return;
     while (p) {
       if (isUserland(p)) return p;
@@ -192,27 +197,43 @@
     return null;
   }
 
-  function getParentComponentFiber(fiber) {
-    return getOwnerFiber(fiber);
-  }
-
   function getComponentHierarchyDisplay(startFiber) {
-    const names = [];
+    if (!startFiber) return '';
+
+    // First, try to build hierarchy using owner chain
+    const ownerNames = [];
     let current = startFiber;
 
-    // Traverse the owner chain and collect all userland components
-    while (current && names.length < MAX_HIERARCHY_LEVELS) {
+    while (current && ownerNames.length < MAX_HIERARCHY_LEVELS) {
       if (isUserland(current)) {
         const name = displayNameForFiber(current);
         if (name && name !== 'Anonymous' && name.length > 2) {
-          names.push(name);
+          ownerNames.push(name);
         }
       }
-      current = getParentComponentFiber(current);
+      current = getOwnerFiber(current);
     }
 
-    // Reverse to show hierarchy from parent to child
-    return names.reverse().join(' > ');
+    // If we found a meaningful owner hierarchy, use it
+    if (ownerNames.length > 1) {
+      return ownerNames.reverse().join(' > ');
+    }
+
+    // Fallback: build hierarchy using parent chain
+    const parentNames = [];
+    current = startFiber;
+
+    while (current && parentNames.length < MAX_HIERARCHY_LEVELS) {
+      if (isUserland(current)) {
+        const name = displayNameForFiber(current);
+        if (name && name !== 'Anonymous' && name.length > 2) {
+          parentNames.push(name);
+        }
+      }
+      current = getParentFiber(current);
+    }
+
+    return parentNames.reverse().join(' > ');
   }
 
   /* ────────────────────────────────────────────────────────────────── *
