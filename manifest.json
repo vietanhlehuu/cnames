@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "React Component Names",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Hold Alt/Option + hover to see React component names (Dev Mode)",
   "icons": {
     "16": "assets/images/16.png",
