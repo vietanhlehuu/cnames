@@ -151,9 +151,26 @@
   const USER_COMPONENT_TAGS = new Set([
     0, // FunctionComponent
     1, // ClassComponent
+    //2,  // IndeterminateComponent
+    //3,  // HostRoot
+    4, // HostPortal
+    //5,  // HostComponent (DOM elements like div, span)
+    //6,  // HostText
+    //7,  // Fragment
+    //8,  // Mode
+    //9,  // ContextConsumer
+    //10, // ContextProvider
     11, // ForwardRef
+    //12, // Profiler
+    //13, // SuspenseComponent
     14, // MemoComponent
-    22, // SimpleMemoComponent (React 18+)
+    15, // SimpleMemoComponent (React <18)
+    16, // LazyComponent
+    //17, // IncompleteClassComponent
+    //21, // CacheComponent
+    //22, // TracingMarkerComponent
+    //23, // HostHoistable
+    //24, // HostSingleton
   ]);
 
   function isUserland(fiber) {

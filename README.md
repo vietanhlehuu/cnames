@@ -1,6 +1,6 @@
 # React Component Names
 
-This Chrome extension allows you to inspect React component names on any webpage.
+Quickly locate React component names on any webpage to identify their source code location. Hold **Alt** (or **Option** on macOS) and hover to reveal component names for fast debugging and development.
 
 ## Demo
 
@@ -20,7 +20,7 @@ You can install this extension in two ways:
 
 1. **Chrome Web Store (Recommended):**
 
-   - Visit the [Chrome Web Store page](https://chrome.google.com/webstore)
+   - Visit the [Chrome Web Store page](https://chromewebstore.google.com/detail/react-component-names/flemaaiegldnehbjdnnhjplnmjccpbod)
    - Click "Add to Chrome" button
 
 2. **Manual Installation:**
