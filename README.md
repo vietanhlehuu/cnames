@@ -76,3 +76,7 @@ If you need to change the trigger key from the default **Alt/Option** key:
     - Click the reload icon (a circular arrow) on the extension card.
 
 The extension will now use your new custom trigger key.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
