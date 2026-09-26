@@ -258,6 +258,15 @@
    * ────────────────────────────────────────────────────────────────── */
   function onMove(evt) {
     if (!inspecting) return;
+
+    // Our keyup can be swallowed (macOS global hotkeys such as Option+T take
+    // the rest of the sequence), leaving us stuck. Mouse events always carry
+    // the real modifier state, so let them correct us.
+    if (!evt.altKey) {
+      stopInspect();
+      return;
+    }
+
     evt.preventDefault();
     evt.stopPropagation();
 
@@ -283,10 +292,17 @@
   }
 
   function stopEvent(evt) {
-    if (inspecting) {
-      evt.preventDefault();
-      evt.stopPropagation();
+    if (!inspecting) return;
+
+    // Never swallow a click when Alt isn't really held — that would make the
+    // page look frozen.
+    if (!evt.altKey) {
+      stopInspect();
+      return;
     }
+
+    evt.preventDefault();
+    evt.stopPropagation();
   }
 
   /* ────────────────────────────────────────────────────────────────── *
@@ -322,9 +338,23 @@
    *  Global key listeners                                             *
    * ────────────────────────────────────────────────────────────────── */
   window.addEventListener('keydown', (e) => {
-    if (e.key === TRIGGER_KEY) startInspect();
+    if (e.key === TRIGGER_KEY) {
+      startInspect();
+      return;
+    }
+    // Any other key means a shortcut is being typed (Option+T, Alt+Tab, …),
+    // not a hover-inspect.
+    stopInspect();
   });
+
   window.addEventListener('keyup', (e) => {
-    if (e.key === TRIGGER_KEY && inspecting) stopInspect();
+    if (e.key === TRIGGER_KEY || !e.altKey) stopInspect();
+  });
+
+  // A global hotkey that activates another app steals the Alt keyup entirely,
+  // so losing focus is our only signal that the key is long gone.
+  window.addEventListener('blur', () => stopInspect());
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopInspect();
   });
 })();
